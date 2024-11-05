@@ -5,7 +5,7 @@ use std::fs;
 type NumberDimension = f32;
 
 fn main() {
-    let text: String = read_file(String::from("test.txt"));
+    let text: String = read_file(String::from("linear_equations.txt"));
     debug!("Debug text: {:?}", text);
     let mut matrix = load_matrix_to_variable(text);
     println!("Input Matrix: ");
