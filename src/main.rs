@@ -11,53 +11,85 @@ fn main() {
     println!("Input Matrix: ");
     pretty_print_matrix(&matrix);
 
-    // Select viable pivot
-    let (x, y) = select_pivot(&matrix);
-    println!("Coordinate pivot -> X: {}, Y: {}", x, y);
+    println!("are we done? {}", are_we_done(&matrix));
 
-    // Divide pivot line by the value
-    let multiplier = matrix[x][y];
-    multiply_matrix_line(&mut matrix, x, multiplier.recip());
-    println!("Line {} divided by {}", x, multiplier.recip());
-    pretty_print_matrix(&matrix);
+    for un in 0..3 {
+        println!("------- Run {} -------", un);
+        // Select viable pivot
+        let (x, y) = select_pivot(&matrix);
+        println!("Coordinate pivot -> X: {}, Y: {}", x, y);
 
-    // Loop through lines
-    for j in 0..matrix.len() {
-        // Skip pivot line
-        if j == x {
-            continue;
+        // Divide pivot line by the value
+        let multiplier = matrix[x][y];
+        multiply_matrix_line(&mut matrix, x, multiplier.recip());
+        println!("Line {} divided by {}", x, multiplier.recip());
+        pretty_print_matrix(&matrix);
+
+        // Loop through lines
+        for j in 0..matrix.len() {
+            // Skip pivot line
+            if j == x {
+                continue;
+            }
+
+            // Get element in same column as pivot
+            let pivot_sort_of = matrix[j][y];
+            let mut pivot_row = matrix[x].clone();
+
+            // Mutliply pivot row with the value
+            multiply_line(&mut pivot_row, -pivot_sort_of);
+            // Sum the current line with the modified pivot row
+            sum_matrix_line(&mut matrix, j, pivot_row);
         }
+        println!("Matrix after reduction: ");
+        pretty_print_matrix(&matrix);
 
-        // Get element in same column as pivot
-        let pivot_sort_of = matrix[j][y];
-        let mut pivot_row = matrix[x].clone();
-
-        // Mutliply pivot row with the value
-        multiply_line(&mut pivot_row, -pivot_sort_of);
-        // Sum the current line with the modified pivot row
-        sum_matrix_line(&mut matrix, j, pivot_row);
+        println!("are we done? {}", are_we_done(&matrix));
     }
-    println!("Matrix after reduction: ");
-    pretty_print_matrix(&matrix);
+}
 
-    // New pivot
-    let (x, y) = select_pivot(&matrix);
-    println!("Coordinate pivot -> X: {}, Y: {}", x, y);
+fn are_we_done(matrix: &Vec<Vec<NumberDimension>>) -> bool {
+    // Check if every column (except the last one) has only one 1 and the rest zeroes
+    let mut one_found: bool;
+    // We can probably assume every row has the same lenght
+    for i in 0..matrix[0].len() - 1 {
+        one_found = false;
+        for j in 0..matrix.len() {
+            // Check if the number is != 0
+            if matrix[j][i] != 0.0 && matrix[j][i] != 1.0 {
+                return false;
+            }
+            // If we find a one, set the found variable. If found again, we are not done yet
+            if matrix[j][i] == 1.0 {
+                if one_found {
+                    return false;
+                } else {
+                    one_found = true;
+                }
+            }
+        }
+    }
+    true
 }
 
 fn select_pivot(matrix: &Vec<Vec<NumberDimension>>) -> (usize, usize) {
     // Try every point (unless it's a zero)
-    for j in 0..matrix.len() {
-        for i in 0..matrix[j].len() {
+    for mut j in 0..matrix.len() {
+        // Also skip the last colums, as it's not part of A
+        for i in 0..matrix[j].len() - 1 {
             // First check -> Is the number zero?
             if matrix[j][i] != /*Fraction::zero()*/ 0.0 {
                 println!("Pivot {},{} -> {} passed first check", j, i, &matrix[j][i]);
                 // Check two: is the number one, AND the rest of the column zeroes?
+                // If this fails, we probably should move one row down. Forcefully.
                 if matrix[j][i] != /*Fraction::one()*/ 1.0
-                    || !check_column(matrix, i, j, /* Fraction::zero()*/ 0.0)
+                    || !validate_column_elements(matrix, i, vec![0.0, 1.0])
                 {
                     println!("Pivot {},{} -> {} passed second check", j, i, &matrix[j][i]);
                     return (j, i);
+                }
+                else {
+                    j += 1;
                 }
             }
         }
@@ -66,17 +98,13 @@ fn select_pivot(matrix: &Vec<Vec<NumberDimension>>) -> (usize, usize) {
     (0, 0)
 }
 
-fn check_column(
+fn validate_column_elements(
     matrix: &Vec<Vec<NumberDimension>>,
     column_index: usize,
-    row_to_skip: usize,
-    wanted: NumberDimension,
+    wanted: Vec<NumberDimension>,
 ) -> bool {
     for i in 0..matrix.len() {
-        if i == row_to_skip {
-            continue;
-        }
-        if matrix[i][column_index] != wanted {
+        if !wanted.contains(&matrix[i][column_index]) {
             return false;
         }
     }
