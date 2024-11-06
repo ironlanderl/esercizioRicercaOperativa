@@ -3,6 +3,7 @@ use log::{debug, error, info, warn};
 use std::fs;
 
 type NumberDimension = f32;
+const PRECISION: f32 = 0.00001; // Used in case of floating point shenanigans to make sure a 0.99999994 gets turned into a 1.
 
 fn main() {
     let text: String = read_file(String::from("linear_equations.txt"));
@@ -11,9 +12,10 @@ fn main() {
     println!("Input Matrix: ");
     pretty_print_matrix(&matrix);
 
-    println!("are we done? {}", are_we_done(&matrix));
+    println!("are we done? {}", is_solution_complete(&matrix));
 
-    for un in 0..3 {
+    // Gauss - Jordan dovrebbe richiedere solo n_colonne passaggi
+    for un in 0..matrix.len() {
         println!("------- Run {} -------", un);
         // Select viable pivot
         let (x, y) = select_pivot(&matrix);
@@ -44,11 +46,13 @@ fn main() {
         println!("Matrix after reduction: ");
         pretty_print_matrix(&matrix);
 
-        println!("are we done? {}", are_we_done(&matrix));
+        println!("are we done? {}", is_solution_complete(&matrix));
     }
+
+    save_solution(&mut matrix);
 }
 
-fn are_we_done(matrix: &Vec<Vec<NumberDimension>>) -> bool {
+fn is_solution_complete(matrix: &Vec<Vec<NumberDimension>>) -> bool {
     // Check if every column (except the last one) has only one 1 and the rest zeroes
     let mut one_found: bool;
     // We can probably assume every row has the same lenght
@@ -87,8 +91,7 @@ fn select_pivot(matrix: &Vec<Vec<NumberDimension>>) -> (usize, usize) {
                 {
                     println!("Pivot {},{} -> {} passed second check", j, i, &matrix[j][i]);
                     return (j, i);
-                }
-                else {
+                } else {
                     j += 1;
                 }
             }
@@ -168,7 +171,13 @@ fn multiply_matrix_line(
 ) {
     matrix[line] = matrix[line]
         .iter()
-        .map(|value| value * multiplier)
+        .map(|value| {
+            if (value.abs() - multiplier.recip().abs()).abs() <= PRECISION {
+                1.0
+            } else {
+                value * multiplier
+            }
+        })
         .collect::<Vec<NumberDimension>>();
 }
 
@@ -194,4 +203,19 @@ fn sum_matrix_line(
     for i in 0..matrix[line].len() {
         matrix[line][i] += sum_line[i];
     }
+}
+
+fn save_solution(matrix: &mut Vec<Vec<NumberDimension>>){
+    // We only care about the final column
+    let b_index = matrix[0].len() - 1;
+
+    let mut string_to_file = String::from("");
+
+    // Teoretically, it should always be a triangular matrix.
+    for i in 0..matrix.len(){
+        string_to_file += &format!("X{} = {}\n", i, matrix[i][b_index]);
+    }
+
+    // Save to file
+    fs::write("rust_solution.txt", string_to_file).expect("Unable to write file");
 }
