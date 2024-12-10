@@ -6,26 +6,18 @@ type NumberDimension = f32;
 const PRECISION: f32 = 0.00001; // Used in case of floating point shenanigans to make sure a 0.99999994 gets turned into a 1.
 
 fn main() {
-    let text: String = read_file(String::from("linear_equations.txt"));
+    let text: String = read_file(String::from("linear_equations_100x100.txt"));
     debug!("Debug text: {:?}", text);
     let mut matrix = load_matrix_to_variable(text);
-    println!("Input Matrix: ");
-    pretty_print_matrix(&matrix);
 
-    println!("are we done? {}", is_solution_complete(&matrix));
-
-    // Gauss - Jordan dovrebbe richiedere solo n_colonne passaggi
+    // Gauss - Jordan should only require n_columns steps
     for un in 0..matrix.len() {
-        println!("------- Run {} -------", un);
         // Select viable pivot
         let (x, y) = select_pivot(&matrix);
-        println!("Coordinate pivot -> X: {}, Y: {}", x, y);
 
         // Divide pivot line by the value
         let multiplier = matrix[x][y];
         multiply_matrix_line(&mut matrix, x, multiplier.recip());
-        println!("Line {} divided by {}", x, multiplier.recip());
-        pretty_print_matrix(&matrix);
 
         // Loop through lines
         for j in 0..matrix.len() {
@@ -38,15 +30,11 @@ fn main() {
             let pivot_sort_of = matrix[j][y];
             let mut pivot_row = matrix[x].clone();
 
-            // Mutliply pivot row with the value
+            // Multiply pivot row with the value
             multiply_line(&mut pivot_row, -pivot_sort_of);
             // Sum the current line with the modified pivot row
             sum_matrix_line(&mut matrix, j, pivot_row);
         }
-        println!("Matrix after reduction: ");
-        pretty_print_matrix(&matrix);
-
-        println!("are we done? {}", is_solution_complete(&matrix));
     }
 
     save_solution(&mut matrix);
@@ -83,13 +71,13 @@ fn select_pivot(matrix: &Vec<Vec<NumberDimension>>) -> (usize, usize) {
         for i in 0..matrix[j].len() - 1 {
             // First check -> Is the number zero?
             if matrix[j][i] != /*Fraction::zero()*/ 0.0 {
-                println!("Pivot {},{} -> {} passed first check", j, i, &matrix[j][i]);
+                //println!("Pivot {},{} -> {} passed first check", j, i, &matrix[j][i]);
                 // Check two: is the number one, AND the rest of the column zeroes?
                 // If this fails, we probably should move one row down. Forcefully.
                 if matrix[j][i] != /*Fraction::one()*/ 1.0
                     || !validate_column_elements(matrix, i, vec![0.0, 1.0])
                 {
-                    println!("Pivot {},{} -> {} passed second check", j, i, &matrix[j][i]);
+                    //println!("Pivot {},{} -> {} passed second check", j, i, &matrix[j][i]);
                     return (j, i);
                 } else {
                     j += 1;
@@ -158,7 +146,7 @@ fn load_matrix_to_variable(input_matrix: String) -> Vec<Vec<NumberDimension>> {
 fn pretty_print_matrix(matrix: &Vec<Vec<NumberDimension>>) {
     for row in matrix {
         for element in row {
-            print!("{}\t", element);
+            print!("{:.2}\t", element);
         }
         println!();
     }
@@ -182,17 +170,7 @@ fn multiply_matrix_line(
 }
 
 fn multiply_line(line: &mut Vec<NumberDimension>, multiplier: NumberDimension) {
-    for i in 0..line.len() {
-        line[i] *= multiplier;
-    }
-}
-
-fn sum_matrixes(matrix: &mut Vec<Vec<NumberDimension>>, sum_matrix: Vec<Vec<NumberDimension>>) {
-    for j in 0..matrix.len() {
-        for i in 0..matrix[j].len() {
-            matrix[j][i] += sum_matrix[j][i];
-        }
-    }
+    line.iter_mut().for_each(|value| *value *= multiplier);
 }
 
 fn sum_matrix_line(
@@ -200,9 +178,11 @@ fn sum_matrix_line(
     line: usize,
     sum_line: Vec<NumberDimension>,
 ) {
-    for i in 0..matrix[line].len() {
-        matrix[line][i] += sum_line[i];
-    }
+    matrix[line] = matrix[line]
+        .iter()
+        .zip(sum_line.iter())
+        .map(|(a, b)| a + b)
+        .collect();
 }
 
 fn save_solution(matrix: &mut Vec<Vec<NumberDimension>>){

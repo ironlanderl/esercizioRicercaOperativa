@@ -39,16 +39,16 @@ def generate_linear_equation(num_variables, num_equations, output_file):
     
 
     # Save the solution to a file in the desired format
-    with open('solution.txt', 'w') as f:
+    with open(f'solution_{num_equations}x{num_variables}.txt', 'w') as f:
         for var, value in solution.items():
             f.write(f"{var} = {value}\n")
     
     return equations, solution
 
 
-num_variables = 100
-num_equations = 100
-output_file = 'linear_equations.txt'
+num_variables = 5000
+num_equations = 5000
+output_file = f'linear_equations_{num_equations}x{num_variables}.txt'
 
 equations, solution = generate_linear_equation(num_variables, num_equations, output_file)
 
