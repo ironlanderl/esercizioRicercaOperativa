@@ -3,21 +3,27 @@ use log::{debug, error, info, warn};
 use std::fs;
 
 type NumberDimension = f32;
-const PRECISION: f32 = 0.00001; // Used in case of floating point shenanigans to make sure a 0.99999994 gets turned into a 1.
 
 fn main() {
-    let text: String = read_file(String::from("linear_equations_100x100.txt"));
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <input_file>", args[0]);
+        std::process::exit(1);
+    }
+    let input_file = &args[1];
+
+    let text: String = read_file(input_file.to_string());
     debug!("Debug text: {:?}", text);
     let mut matrix = load_matrix_to_variable(text);
 
     // Gauss - Jordan should only require n_columns steps
-    for un in 0..matrix.len() {
+    for _ in 0..matrix.len() {
         // Select viable pivot
         let (x, y) = select_pivot(&matrix);
 
         // Divide pivot line by the value
         let multiplier = matrix[x][y];
-        multiply_matrix_line(&mut matrix, x, multiplier.recip());
+        divide_matrix_line(&mut matrix, x, multiplier);
 
         // Loop through lines
         for j in 0..matrix.len() {
@@ -152,19 +158,15 @@ fn pretty_print_matrix(matrix: &Vec<Vec<NumberDimension>>) {
     }
 }
 
-fn multiply_matrix_line(
+fn divide_matrix_line(
     matrix: &mut Vec<Vec<NumberDimension>>,
     line: usize,
-    multiplier: NumberDimension,
+    divider: NumberDimension,
 ) {
     matrix[line] = matrix[line]
         .iter()
         .map(|value| {
-            if (value.abs() - multiplier.recip().abs()).abs() <= PRECISION {
-                1.0
-            } else {
-                value * multiplier
-            }
+            value / divider
         })
         .collect::<Vec<NumberDimension>>();
 }
